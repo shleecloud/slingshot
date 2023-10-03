@@ -19,7 +19,7 @@ export default class App {
                 width: this.canvasWidth,
                 height: this.canvasHeight,
                 background: 'transparent',
-                wireframes: true,
+                wireframes: false,
                 showAngleIndicator: false,
             },
         });
@@ -36,25 +36,27 @@ export default class App {
         const staticCategory = 0x0002;
 
         // * 지면 만들기
-        this.ground = Matter.Bodies.rectangle(
-            this.canvasWidth / 2,
-            this.canvasHeight - this.thickness / 2 + this.thickness,
-            this.matterContainer.clientWidth,
-            this.thickness,
-            {
-                isStatic: true,
-            },
-        );
+        // this.ground = Matter.Bodies.rectangle(
+        //     this.canvasWidth / 2,
+        //     this.canvasHeight - this.thickness / 2 + this.thickness,
+        //     this.matterContainer.clientWidth,
+        //     this.thickness,
+        //     {
+        //         isStatic: true,
+        //     },
+        // );
 
         // * 플랫폼 만들기
         this.platformUp = Matter.Bodies.rectangle(750, 200, 150, this.thickness / 5, {
             isStatic: true,
+            label: 'platform',
             collisionFilter: {
                 category: staticCategory,
             },
         });
         this.platformDown = Matter.Bodies.rectangle(750, 400, 250, this.thickness / 5, {
             isStatic: true,
+            label: 'platform',
             collisionFilter: {
                 category: staticCategory,
             },
@@ -63,14 +65,16 @@ export default class App {
         // * 벽 만들기
         this.wall = Matter.Bodies.rectangle(450, 490, this.thickness / 5, 220, {
             isStatic: true,
+            label: 'platform',
             collisionFilter: {
                 category: staticCategory,
             },
         });
 
-        // * 더미 송편 만들기
+        // * 타겟 송편 만들기
         this.pyramidUp = Matter.Composites.pyramid(662, 270, 6, 4, 0, 0, function (x, y) {
             return Matter.Bodies.trapezoid(x, y, 30, 30, 0.33, {
+                label: 'target',
                 collisionFilter: {
                     category: staticCategory,
                 },
@@ -79,6 +83,7 @@ export default class App {
 
         this.pyramidDown = Matter.Composites.pyramid(690, 100, 4, 4, 0, 0, function (x, y) {
             return Matter.Bodies.trapezoid(x, y, 30, 30, 0.33, {
+                label: 'target',
                 collisionFilter: {
                     category: staticCategory,
                 },
@@ -87,7 +92,7 @@ export default class App {
 
         // * 물리엔진에 추가
         Matter.Composite.add(this.engine.world, [
-            this.ground,
+            // this.ground,
             this.wall,
             this.platformUp,
             this.platformDown,
@@ -143,15 +148,24 @@ export default class App {
                 this.elastic.bodyB = this.rock;
                 firing = false;
             }
-        });
 
-        // todo 발사되고 1초 후에 돌맹이는 사라진다
+            // todo 모든 표적이 플랫폼에서 떨어졌는지 확인한다
+            // * 지면을 삭제하고 타겟과 돌맹이가 canvasHeight 아래로 내려가면 객체를 삭제한다
+            console.log(this.engine.world);
+            this.engine.world.composites.forEach((body) => {
+                if (body.label === 'target' && body.position.y > this.canvasHeight) {
+                    Matter.Composite.remove(this.engine.world, body);
+                }
+                // if (body.label === 'rock' && body.position.y > this.canvasHeight) {
+                //     Matter.Composite.remove(this.engine.world, body);
+                // }
+            });
+
+            // todo 표적이 모두 떨어지면 발사한 횟수를 로컬 스토리지에 기록한다
+        });
 
         // * 물리엔진에 추가
         Matter.Composite.add(this.engine.world, [this.elastic, this.rock, this.mouseConstraint]);
         this.render.mouse = this.mouse;
     }
-
-    // todo 모든 표적이 플랫폼에서 떨어졌는지 확인한다
-    // todo 표적이 모두 떨어지면 발사한 횟수를 로컬 스토리지에 기록한다
 }
