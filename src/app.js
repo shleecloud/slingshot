@@ -33,6 +33,8 @@ export default class App {
     }
 
     createObject() {
+        const staticCategory = 0x0002;
+
         // * 지면 만들기
         this.ground = Matter.Bodies.rectangle(
             this.canvasWidth / 2,
@@ -47,23 +49,40 @@ export default class App {
         // * 플랫폼 만들기
         this.platformUp = Matter.Bodies.rectangle(750, 200, 150, this.thickness / 5, {
             isStatic: true,
+            collisionFilter: {
+                category: staticCategory,
+            },
         });
         this.platformDown = Matter.Bodies.rectangle(750, 400, 250, this.thickness / 5, {
             isStatic: true,
+            collisionFilter: {
+                category: staticCategory,
+            },
         });
 
         // * 벽 만들기
-        this.wall = Matter.Bodies.rectangle(450, 480, this.thickness / 5, 230, {
+        this.wall = Matter.Bodies.rectangle(450, 490, this.thickness / 5, 220, {
             isStatic: true,
+            collisionFilter: {
+                category: staticCategory,
+            },
         });
 
         // * 더미 송편 만들기
         this.pyramidUp = Matter.Composites.pyramid(662, 270, 6, 4, 0, 0, function (x, y) {
-            return Matter.Bodies.trapezoid(x, y, 30, 30, 0.33);
+            return Matter.Bodies.trapezoid(x, y, 30, 30, 0.33, {
+                collisionFilter: {
+                    category: staticCategory,
+                },
+            });
         });
 
         this.pyramidDown = Matter.Composites.pyramid(690, 100, 4, 4, 0, 0, function (x, y) {
-            return Matter.Bodies.trapezoid(x, y, 30, 30, 0.33);
+            return Matter.Bodies.trapezoid(x, y, 30, 30, 0.33, {
+                collisionFilter: {
+                    category: staticCategory,
+                },
+            });
         });
 
         // * 물리엔진에 추가
@@ -78,12 +97,15 @@ export default class App {
     }
 
     createSlingshotEvents() {
+        const staticCategory = 0x0002,
+            interactCategory = 0x0001;
         // * 슬링샷 돌맹이 만들기
         this.rock = Matter.Bodies.polygon(170, 450, 10, 20, { density: 0.01, label: 'rock' });
+        this.rock.collisionFilter.category = interactCategory;
         this.elastic = Matter.Constraint.create({
             pointA: { x: 170, y: 450 },
             bodyB: this.rock,
-            stiffness: 0.05,
+            stiffness: 0.9,
             damping: 0.1,
             length: 0.5,
         });
@@ -93,7 +115,7 @@ export default class App {
         this.mouseConstraint = Matter.MouseConstraint.create(this.engine, {
             mouse: this.mouse,
             collisionFilter: {
-                mask: 0b1,
+                mask: interactCategory,
             },
             constraint: {
                 stiffness: 0.2,
@@ -103,23 +125,25 @@ export default class App {
             },
         });
 
-        // * 마우스 이벤트
         let firing = false;
-
         Matter.Events.on(this.mouseConstraint, 'enddrag', function (event) {
             if (event.body.label !== 'rock') return;
+            event.body.label = 'released rock';
             firing = true;
+            event.body.collisionFilter.category = staticCategory;
         });
         Matter.Events.on(this.engine, 'afterUpdate', () => {
             if (firing && (Math.abs(this.rock.position.x - 170) < 10 || Math.abs(this.rock.position.y - 430) < 10)) {
-                this.rock = Matter.Bodies.polygon(170, 450, 10, 20, { density: 0.01, label: 'rock' });
+                this.rock = Matter.Bodies.polygon(170, 450, 10, 20, {
+                    density: 0.01,
+                    label: 'rock',
+                    collisionFilter: { category: interactCategory },
+                });
                 Matter.Composite.add(this.engine.world, this.rock);
                 this.elastic.bodyB = this.rock;
                 firing = false;
             }
         });
-
-        // todo 슬링샷이 발사된 돌맹이는 클릭 이벤트가 해지된다
 
         // todo 발사되고 1초 후에 돌맹이는 사라진다
 
