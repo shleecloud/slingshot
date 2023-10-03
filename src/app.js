@@ -151,7 +151,7 @@ export default class App {
 
             // todo 모든 표적이 플랫폼에서 떨어졌는지 확인한다
             // * 지면을 삭제하고 타겟과 돌맹이가 canvasHeight 아래로 내려가면 객체를 삭제한다
-            console.log(this.engine.world);
+            // console.log(this.engine.world);
             this.engine.world.composites.forEach((body) => {
                 if (body.label === 'target' && body.position.y > this.canvasHeight) {
                     Matter.Composite.remove(this.engine.world, body);
